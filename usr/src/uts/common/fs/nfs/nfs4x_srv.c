@@ -326,7 +326,13 @@ rfs4x_op_exchange_id(nfs_argop4 *argop, nfs_resop4 *resop,
 again:
 	create = TRUE;
 	cp = rfs4_findclient(&cid, &create, conf);
-	ASSERT(cp != NULL);
+
+	if (cp == NULL) {
+		status = NFS4ERR_RESOURCE;
+		if (conf)
+			rfs4_client_rele(conf);
+		goto err;
+	}
 
 	if (conf) {
 		rfs4_dbe_lock(cp->rc_dbe);
