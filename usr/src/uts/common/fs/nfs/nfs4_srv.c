@@ -829,13 +829,20 @@ rfs4_servinst_in_grace(rfs4_servinst_t *sip)
 {
 	time_t grace_expiry;
 
+	/* All clients called reclaim-complete */
+	if (sip->nreclaim == 0 || sip->grace_period == 0)
+		return (0);
+
 	rw_enter(&sip->rwlock, RW_READER);
 	grace_expiry = sip->start_time + sip->grace_period;
-	if (sip->nreclaim == 0)
-		grace_expiry = 0;
 	rw_exit(&sip->rwlock);
 
-	return (((time_t)TICK_TO_SEC(ddi_get_lbolt())) < grace_expiry);
+	if (((time_t)TICK_TO_SEC(ddi_get_lbolt())) < grace_expiry)
+		return (1);
+
+	/* Once grace period ends, optimize next calls */
+	sip->grace_period = 0;
+	return (0);
 }
 
 int
