@@ -860,7 +860,6 @@ typedef struct nfs4_srv {
 	rfs4_index_t *rfs4_deleg_state_idx;
 
 	/* nfs4.x */
-	krwlock_t	findsession_lock;
 	rfs4_table_t	*rfs4_session_tab;
 	rfs4_index_t	*rfs4_session_idx;
 

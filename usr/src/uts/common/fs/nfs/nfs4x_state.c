@@ -115,10 +115,8 @@ rfs4x_findsession_by_id(sessionid4 sessid)
 	bool_t		 create = FALSE;
 	nfs4_srv_t *nsrv4 = nfs4_get_srv();
 
-	rw_enter(&nsrv4->findsession_lock, RW_READER);
 	sp = (rfs4_session_t *)rfs4_dbsearch(nsrv4->rfs4_session_idx,
 	    sessid, &create, NULL, RFS4_DBS_VALID);
-	rw_exit(&nsrv4->findsession_lock);
 
 	return (sp);
 }
@@ -136,7 +134,7 @@ rfs4x_findsession_by_id(sessionid4 sessid)
 rfs4_session_t	*
 rfs4x_createsession(session41_create_t *ap)
 {
-	static volatile uint32_t session_id_counter;
+	static uint32_t session_id_counter;
 
 	rfs4_session_t	*sp = NULL;
 	bool_t create = TRUE;
@@ -149,13 +147,11 @@ rfs4x_createsession(session41_create_t *ap)
 	 */
 	ap->cs_id = key.impl_id.s_id = atomic_inc_32_nv(&session_id_counter);
 
-	rw_enter(&nsrv4->findsession_lock, RW_WRITER);
 	if ((sp = (rfs4_session_t *)rfs4_dbsearch(nsrv4->rfs4_session_idx,
 	    &key, &create, (void *)ap, RFS4_DBS_VALID)) == NULL) {
 		DTRACE_PROBE1(mds__srv__createsession__fail,
 		    session41_create_t *, ap);
 	}
-	rw_exit(&nsrv4->findsession_lock);
 	return (sp);
 }
 
@@ -557,12 +553,10 @@ rfs4_session_expiry(rfs4_entry_t u_entry)
 void
 rfs4x_state_init_locked(nfs4_srv_t *nsrv4)
 {
-	rw_init(&nsrv4->findsession_lock, NULL, RW_DEFAULT, NULL);
-
 	nsrv4->rfs4_session_tab = rfs4_table_create(nsrv4->nfs4_server_state,
 	    "Session", 5 * rfs4_lease_time, 1, rfs4_session_create,
 	    rfs4_session_destroy, rfs4_session_expiry, sizeof (rfs4_session_t),
-	    RFS4_TABSIZE, RFS4_MAXTABSZ/8, 100);
+	    RFS4_TABSIZE, RFS4_MAXTABSZ/8, -1);
 
 	nsrv4->rfs4_session_idx = rfs4_index_create(nsrv4->rfs4_session_tab,
 	    "session_idx", sessid_hash, sessid_compare, sessid_mkkey, TRUE);
@@ -572,5 +566,4 @@ void
 rfs4x_state_fini(nfs4_srv_t *nsrv4)
 {
 	/* All tables will be destroyed by caller */
-	rw_destroy(&nsrv4->findsession_lock);
 }
