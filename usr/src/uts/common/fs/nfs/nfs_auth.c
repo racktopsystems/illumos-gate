@@ -1048,7 +1048,7 @@ nfsauth_cache_get(struct exportinfo *exi, struct svc_req *req, int flavor,
 		kmem_free(addr.buf, addr.maxlen);
 		addr = p->auth_clnt->authc_addr;
 
-		atomic_inc_uint(&nfsauth_cache_miss);
+		nfsauth_cache_miss++;
 
 		res = nfsauth_retrieve(nag, exi, svc_getnetid(req->rq_xprt),
 		    flavor, &addr, &access, cr, &tmpuid, &tmpgid, &tmpngids,
@@ -1126,7 +1126,7 @@ nfsauth_cache_get(struct exportinfo *exi, struct svc_req *req, int flavor,
 			p->auth_state = NFS_AUTH_STALE;
 			mutex_exit(&p->auth_lock);
 
-			nacr = atomic_inc_uint_nv(&nfsauth_cache_refresh);
+			nacr = ++nfsauth_cache_refresh;
 			DTRACE_PROBE3(nfsauth__debug__cache__stale,
 			    struct exportinfo *, exi,
 			    struct auth_cache *, p,
@@ -1201,7 +1201,7 @@ nfsauth_cache_get(struct exportinfo *exi, struct svc_req *req, int flavor,
 			mutex_exit(&p->auth_lock);
 		}
 
-		nach = atomic_inc_uint_nv(&nfsauth_cache_hit);
+		nach = ++nfsauth_cache_hit;
 		DTRACE_PROBE2(nfsauth__debug__cache__hit,
 		    uint_t, nach,
 		    time_t, refresh);
@@ -1220,7 +1220,7 @@ retrieve:
 
 	ASSERT(p == NULL);
 
-	atomic_inc_uint(&nfsauth_cache_miss);
+	nfsauth_cache_miss++;
 
 	if (nfsauth_retrieve(nag, exi, svc_getnetid(req->rq_xprt), flavor,
 	    &addr, &access, cr, &tmpuid, &tmpgid, &tmpngids, &tmpgids)) {
@@ -1515,7 +1515,7 @@ exi_cache_reclaim_zone(nfs_globals_t *ng)
 
 	rw_exit(&ne->exported_lock);
 
-	atomic_inc_uint(&nfsauth_cache_reclaim);
+	nfsauth_cache_reclaim++;
 }
 
 static void
