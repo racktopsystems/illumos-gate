@@ -7580,7 +7580,9 @@ retry:
 	}
 
 	/* Hold off access to the sequence space while the open is done */
-	rfs4_sw_enter(&oo->ro_sw);
+	/* Workaround to avoid deadlock */
+	if (!rfs4_has_session(cs))
+		rfs4_sw_enter(&oo->ro_sw);
 
 	/*
 	 * If the open_owner existed before at the server, then check
@@ -7589,6 +7591,7 @@ retry:
 	if (!create && !oo->ro_postpone_confirm) {
 		switch (rfs4_check_open_seqid(args->seqid, oo, resop, cs)) {
 		case NFS4_CHKSEQ_BAD:
+			ASSERT(!rfs4_has_session(cs));
 			if ((args->seqid > oo->ro_open_seqid) &&
 			    oo->ro_need_confirm) {
 				rfs4_free_opens(oo, TRUE, FALSE);
@@ -7612,6 +7615,7 @@ retry:
 		 */
 		if (oo->ro_need_confirm) {
 			rfs4_free_opens(oo, TRUE, FALSE);
+			ASSERT(!rfs4_has_session(cs));
 			rfs4_sw_exit(&oo->ro_sw);
 			rfs4_openowner_rele(oo);
 			goto retry;
@@ -7804,7 +7808,8 @@ out:
 finish:
 	*cs->statusp = resp->status;
 
-	rfs4_sw_exit(&oo->ro_sw);
+	if (!rfs4_has_session(cs))
+		rfs4_sw_exit(&oo->ro_sw);
 	rfs4_openowner_rele(oo);
 
 end:
