@@ -3913,6 +3913,14 @@ rfs4_check_stateid(int mode, vnode_t *vp,
 				    gethrestime_sec();
 			}
 
+			/* Fill context for possible nbmand check */
+			if (ct != NULL && ct->cc_pid == 0) {
+				ct->cc_sysid =
+				    sp->rs_owner->ro_client->rc_sysidt;
+				ct->cc_pid =
+				    rfs4_dbe_getid(sp->rs_owner->ro_dbe);
+			}
+
 			rfs4_state_rele_nounlock(sp);
 
 			return (stat);
