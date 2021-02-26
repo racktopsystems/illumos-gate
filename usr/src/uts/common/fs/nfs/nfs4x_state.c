@@ -221,10 +221,7 @@ rfs4x_client_session_remove(rfs4_client_t *cp)
 	while ((sp = list_head(&cp->rc_sessions)) != NULL) {
 		list_remove(&cp->rc_sessions, sp);
 
-		rfs4_dbe_lock(sp->sn_dbe);
 		rfs4_dbe_invalidate(sp->sn_dbe);
-		rfs4_dbe_unlock(sp->sn_dbe);
-
 	}
 	rfs4_dbe_unlock(cp->rc_dbe);
 }

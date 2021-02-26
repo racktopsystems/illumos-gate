@@ -1046,12 +1046,10 @@ rfs4x_op_sequence(nfs_argop4 *argop, nfs_resop4 *resop,
 	slot->se_seqid = args->sa_sequenceid;
 	mutex_exit(&slot->se_lock);
 
-	/*
-	 * Update access time and lease
-	 */
 	cs->slotno = args->sa_slotid;
+
+	/* Update access time */
 	sp->sn_laccess = nfs_sys_uptime();
-	rfs4_update_lease(cs->client);
 
 	/*
 	 * Let's keep it simple for now
@@ -1065,6 +1063,10 @@ rfs4x_op_sequence(nfs_argop4 *argop, nfs_resop4 *resop,
 	    sp->sn_fore->cn_attrs.ca_maxrequests - 1;
 	rok->sr_status_flags |= cbstat;
 	rfs4_dbe_unlock(sp->sn_dbe);
+
+	/* Update lease (out of session lock) */
+	rfs4_update_lease(cs->client);
+
 out:
 	*cs->statusp = resp->sr_status = status;
 	DTRACE_NFSV4_2(op__sequence__done,
